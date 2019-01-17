@@ -16,8 +16,8 @@ var rTypeInt64, rTypeFloat64 = reflect.TypeOf(int64(0)), reflect.TypeOf(float64(
 
 type JSONSchema struct {
 	Schema      string              `json:"$schema,omitempty"`
-	Definitions map[string]property `json:"definitions,omitempty"`
-	property
+	Definitions map[string]Property `json:"definitions,omitempty"`
+	Property
 }
 
 type knownTypes map[reflect.Type]string
@@ -77,7 +77,7 @@ func (g *Generator) WithDefinition(name string, d interface{}) *Generator {
 	return g
 }
 
-func (g *Generator) MustGenerate() JSONSchema {
+func (g *Generator) MustGenerate() *JSONSchema {
 	js, err := g.Generate()
 	if err != nil {
 		panic(err)
@@ -86,7 +86,7 @@ func (g *Generator) MustGenerate() JSONSchema {
 }
 
 // Generate generates a schema for the provided interface.
-func (g *Generator) Generate() (JSONSchema, error) {
+func (g *Generator) Generate() (*JSONSchema, error) {
 
 	d := &JSONSchema{
 		Schema: g.options.Schema,
@@ -94,7 +94,7 @@ func (g *Generator) Generate() (JSONSchema, error) {
 
 	if g.definitions != nil {
 		d.knownTypes = make(map[reflect.Type]string)
-		d.Definitions = make(map[string]property)
+		d.Definitions = make(map[string]Property)
 
 		for name, instance := range g.definitions {
 			value := reflect.ValueOf(instance)
@@ -118,7 +118,7 @@ func (g *Generator) Generate() (JSONSchema, error) {
 		d.read(value.Type())
 	}
 
-	return *d, nil
+	return d, nil
 }
 
 // String return the JSON encoding of the JSONSchema as a string
@@ -133,15 +133,15 @@ func (d *JSONSchema) setDefaultSchema() {
 	}
 }
 
-type property struct {
+type Property struct {
 	Type                 string               `json:"type,omitempty"`
 	Format               string               `json:"format,omitempty"`
-	Items                *property            `json:"items,omitempty"`
-	Properties           map[string]*property `json:"properties,omitempty"`
+	Items                *Property            `json:"items,omitempty"`
+	Properties           map[string]*Property `json:"properties,omitempty"`
 	Required             []string             `json:"required,omitempty"`
 	AdditionalProperties bool                 `json:"additionalProperties,omitempty"`
 	Description          string               `json:"description,omitempty"`
-	AnyOf                []*property          `json:"anyOf,omitempty"`
+	AnyOf                []*Property          `json:"anyOf,omitempty"`
 
 	// validation keywords:
 	// For any number-valued fields, we're making them pointers, because
@@ -167,11 +167,11 @@ type property struct {
 	isDefinition bool
 }
 
-func (p *property) child() *property {
-	return &property{knownTypes: p.knownTypes}
+func (p *Property) child() *Property {
+	return &Property{knownTypes: p.knownTypes}
 }
 
-func (p *property) read(t reflect.Type) {
+func (p *Property) read(t reflect.Type) {
 	jsType, format, kind := getTypeFromMapping(t)
 	if jsType != "" {
 		p.Type = jsType
@@ -193,7 +193,7 @@ func (p *property) read(t reflect.Type) {
 
 	// say we have *int
 	if kind == reflect.Ptr && isPrimitive(t.Elem().Kind()) {
-		p.AnyOf = []*property{
+		p.AnyOf = []*Property{
 			{Type: p.Type},
 			{Type: "null"},
 		}
@@ -201,7 +201,7 @@ func (p *property) read(t reflect.Type) {
 	}
 }
 
-func (p *property) readFromSlice(t reflect.Type) {
+func (p *Property) readFromSlice(t reflect.Type) {
 	jsType, _, kind := getTypeFromMapping(t.Elem())
 	if kind == reflect.Uint8 {
 		p.Type = "string"
@@ -211,18 +211,18 @@ func (p *property) readFromSlice(t reflect.Type) {
 	}
 }
 
-func (p *property) readFromMap(t reflect.Type) {
+func (p *Property) readFromMap(t reflect.Type) {
 	jsType, format, _ := getTypeFromMapping(t.Elem())
 
 	if jsType != "" {
-		p.Properties = make(map[string]*property, 0)
-		p.Properties[".*"] = &property{Type: jsType, Format: format}
+		p.Properties = make(map[string]*Property, 0)
+		p.Properties[".*"] = &Property{Type: jsType, Format: format}
 	} else {
 		p.AdditionalProperties = true
 	}
 }
 
-func (p *property) readFromStruct(t reflect.Type) {
+func (p *Property) readFromStruct(t reflect.Type) {
 	var ok bool
 	if !p.isDefinition {
 		if p.Ref, ok = p.knownTypes.getReference(t); ok {
@@ -232,7 +232,7 @@ func (p *property) readFromStruct(t reflect.Type) {
 	}
 
 	p.Type = "object"
-	p.Properties = make(map[string]*property, 0)
+	p.Properties = make(map[string]*Property, 0)
 	p.AdditionalProperties = false
 
 	count := t.NumField()
@@ -262,7 +262,7 @@ func (p *property) readFromStruct(t reflect.Type) {
 	}
 }
 
-func (p *property) addValidatorsFromTags(tag *reflect.StructTag) {
+func (p *Property) addValidatorsFromTags(tag *reflect.StructTag) {
 	switch p.Type {
 	case "string":
 		p.addStringValidators(tag)
@@ -290,7 +290,7 @@ func float64ptr(i interface{}) *float64 {
 	return &j
 }
 
-func (p *property) addStringValidators(tag *reflect.StructTag) {
+func (p *Property) addStringValidators(tag *reflect.StructTag) {
 	// min length
 	mls := tag.Get("minLength")
 	ml, err := strconv.ParseInt(mls, 10, 64)
@@ -320,7 +320,7 @@ func (p *property) addStringValidators(tag *reflect.StructTag) {
 	}
 }
 
-func (p *property) addNumberValidators(tag *reflect.StructTag) {
+func (p *Property) addNumberValidators(tag *reflect.StructTag) {
 	m, err := strconv.ParseFloat(tag.Get("multipleOf"), 64)
 	if err == nil {
 		p.MultipleOf = float64ptr(m)

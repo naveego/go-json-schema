@@ -4,9 +4,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/naveego/go-json-schema"
 	"log"
-
-	"github.com/SteveRuble/go-json-schema-generator"
 )
 
 type NestedItem struct {
@@ -30,7 +29,7 @@ type OtherDefinedType struct {
 }
 
 func main() {
-	g := generator.NewGenerator().WithRoot(Domain{}).WithDefinitions(map[string]interface{}{
+	g := jsonschema.NewGenerator().WithRoot(Domain{}).WithDefinitions(map[string]interface{}{
 			"nestedItem": NestedItem{},
 			"other":      OtherDefinedType{},
 		},)

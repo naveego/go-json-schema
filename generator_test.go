@@ -42,29 +42,29 @@ func (self *propertySuite) TestLoad(c *C) {
 	j, err := NewGenerator().WithRoot(&ExampleJSONBasic{}).Generate()
 	c.Assert(err, IsNil)
 
-	c.Assert(j, DeepEquals, JSONSchema{
+	c.Assert(j, DeepEquals, &JSONSchema{
 		Schema: DEFAULT_SCHEMA,
-		property: property{
+		Property: Property{
 			Type:     "object",
 			Required: []string{"Interface"},
-			Properties: map[string]*property{
-				"Bool":       &property{Type: "boolean"},
-				"Integer":    &property{Type: "integer"},
-				"Integer8":   &property{Type: "integer"},
-				"Integer16":  &property{Type: "integer"},
-				"Integer32":  &property{Type: "integer"},
-				"Integer64":  &property{Type: "integer"},
-				"UInteger":   &property{Type: "integer"},
-				"UInteger8":  &property{Type: "integer"},
-				"UInteger16": &property{Type: "integer"},
-				"UInteger32": &property{Type: "integer"},
-				"UInteger64": &property{Type: "integer"},
-				"String":     &property{Type: "string"},
-				"Bytes":      &property{Type: "string"},
-				"Float32":    &property{Type: "number"},
-				"Float64":    &property{Type: "number"},
-				"Interface":  &property{},
-				"Timestamp":  &property{Type: "string", Format: "date-time"},
+			Properties: map[string]*Property{
+				"Bool":       &Property{Type: "boolean"},
+				"Integer":    &Property{Type: "integer"},
+				"Integer8":   &Property{Type: "integer"},
+				"Integer16":  &Property{Type: "integer"},
+				"Integer32":  &Property{Type: "integer"},
+				"Integer64":  &Property{Type: "integer"},
+				"UInteger":   &Property{Type: "integer"},
+				"UInteger8":  &Property{Type: "integer"},
+				"UInteger16": &Property{Type: "integer"},
+				"UInteger32": &Property{Type: "integer"},
+				"UInteger64": &Property{Type: "integer"},
+				"String":     &Property{Type: "string"},
+				"Bytes":      &Property{Type: "string"},
+				"Float32":    &Property{Type: "number"},
+				"Float64":    &Property{Type: "number"},
+				"Interface":  &Property{},
+				"Timestamp":  &Property{Type: "string", Format: "date-time"},
 			},
 		},
 	})
@@ -84,41 +84,41 @@ func (self *propertySuite) TestLoadWithTag(c *C) {
 	j, err := NewGenerator().WithRoot(&ExampleJSONBasicWithTag{}).Generate()
 	c.Assert(err, IsNil)
 
-	c.Assert(j, DeepEquals, JSONSchema{
+	c.Assert(j, DeepEquals, &JSONSchema{
 		Schema: DEFAULT_SCHEMA,
-		property: property{
+		Property: Property{
 			Type: "object",
-			Properties: map[string]*property{
-				"test": &property{
+			Properties: map[string]*Property{
+				"test": &Property{
 					Type:  "boolean",
 					Title: "BoolField",
 				},
-				"string": &property{
+				"string": &Property{
 					Type:        "string",
 					MinLength:   int64ptr(3),
 					MaxLength:   int64ptr(10),
 					Pattern:     "m{3,10}",
 					Description: "blah",
 				},
-				"const": &property{
+				"const": &Property{
 					Type:  "string",
 					Const: "blah",
 				},
-				"float": &property{
+				"float": &Property{
 					Type:    "number",
 					Minimum: float64ptr(1.5),
 					Maximum: float64ptr(42),
 				},
-				"int": &property{
+				"int": &Property{
 					Type:             "integer",
 					ExclusiveMinimum: float64ptr(-10),
 					ExclusiveMaximum: float64ptr(0),
 				},
-				"answer": &property{
+				"answer": &Property{
 					Type:  "integer",
 					Const: int64(42),
 				},
-				"fruit": &property{
+				"fruit": &Property{
 					Type: "string",
 					Enum: []string{"apple", "banana", "pear"},
 				},
@@ -136,16 +136,16 @@ func (self *propertySuite) TestLoadSliceAndContains(c *C) {
 	j, err := NewGenerator().WithRoot(&ExampleJSONBasicSlices{}).Generate()
 	c.Assert(err, IsNil)
 
-	c.Assert(j, DeepEquals, JSONSchema{
+	c.Assert(j, DeepEquals, &JSONSchema{
 		Schema: DEFAULT_SCHEMA,
-		property: property{
+		Property: Property{
 			Type: "object",
-			Properties: map[string]*property{
-				"Slice": &property{
+			Properties: map[string]*Property{
+				"Slice": &Property{
 					Type:  "array",
-					Items: &property{Type: "string"},
+					Items: &Property{Type: "string"},
 				},
-				"SliceOfInterface": &property{
+				"SliceOfInterface": &Property{
 					Type: "array",
 				},
 			},
@@ -171,17 +171,17 @@ func (self *propertySuite) TestLoadNested(c *C) {
 	j, err := NewGenerator().WithRoot(&ExampleJSONNestedSlice{}).Generate()
 	c.Assert(err, IsNil)
 
-	c.Assert(j, DeepEquals, JSONSchema{
+	c.Assert(j, DeepEquals, &JSONSchema{
 		Schema: DEFAULT_SCHEMA,
-		property: property{
+		Property: Property{
 			Type: "object",
-			Properties: map[string]*property{
-				"slice": &property{
+			Properties: map[string]*Property{
+				"slice": &Property{
 					Type: "array",
-					Items: &property{
+					Items: &Property{
 						Type: "object",
-						Properties: map[string]*property{
-							"Foo": &property{Type: "string"},
+						Properties: map[string]*Property{
+							"Foo": &Property{Type: "string"},
 						},
 						Required: []string{"Foo"},
 					},
@@ -211,30 +211,30 @@ func (self *propertySuite) TestLoadNestedWithDefinitions(c *C) {
 
 	k := JSONSchema{
 		Schema: DEFAULT_SCHEMA,
-		Definitions: map[string]property{
-			"parent": property{
+		Definitions: map[string]Property{
+			"parent": Property{
 				Type: "object",
-				Properties: map[string]*property{
-					"Name": &property{
+				Properties: map[string]*Property{
+					"Name": &Property{
 						Type: "string",
 					},
-					"Child": &property{
+					"Child": &Property{
 						Ref: "#/definitions/child",
 					},
 				},
 			},
-			"child": property{
+			"child": Property{
 				Type: "object",
-				Properties: map[string]*property{
-					"Foo": &property{Type: "string"},
+				Properties: map[string]*Property{
+					"Foo": &Property{Type: "string"},
 				},
 				Required: []string{"Foo"},
 			},
 		},
-		property: property{
+		Property: Property{
 			Type: "object",
-			Properties: map[string]*property{
-				"Child": &property{
+			Properties: map[string]*Property{
+				"Child": &Property{
 					Ref: "#/definitions/parent",
 				},
 			},
@@ -252,19 +252,19 @@ type ExampleJSONBasicMaps struct {
 func (self *propertySuite) TestLoadMap(c *C) {
 	j := NewGenerator().WithRoot(&ExampleJSONBasicMaps{}).MustGenerate()
 
-	c.Assert(j, DeepEquals, JSONSchema{
+	c.Assert(j, DeepEquals, &JSONSchema{
 		Schema: DEFAULT_SCHEMA,
-		property: property{
+		Property: Property{
 			Type: "object",
-			Properties: map[string]*property{
-				"Maps": &property{
+			Properties: map[string]*Property{
+				"Maps": &Property{
 					Type: "object",
-					Properties: map[string]*property{
-						".*": &property{Type: "string"},
+					Properties: map[string]*Property{
+						".*": &Property{Type: "string"},
 					},
 					AdditionalProperties: false,
 				},
-				"MapOfInterface": &property{
+				"MapOfInterface": &Property{
 					Type:                 "object",
 					AdditionalProperties: true,
 				},
@@ -276,11 +276,11 @@ func (self *propertySuite) TestLoadMap(c *C) {
 func (self *propertySuite) TestLoadNonStruct(c *C) {
 	j := NewGenerator().WithRoot([]string{}).MustGenerate()
 
-	c.Assert(j, DeepEquals, JSONSchema{
+	c.Assert(j, DeepEquals, &JSONSchema{
 		Schema: DEFAULT_SCHEMA,
-		property: property{
+		Property: Property{
 			Type:  "array",
-			Items: &property{Type: "string"},
+			Items: &Property{Type: "string"},
 		},
 	})
 }
@@ -325,28 +325,28 @@ func (self *propertySuite) TestLoadNestedSliceWithDefinitions(c *C) {
 
 	k := JSONSchema{
 		Schema: DEFAULT_SCHEMA,
-		Definitions: map[string]property{
-			"parent": property{
+		Definitions: map[string]Property{
+			"parent": Property{
 				Type: "object",
-				Properties: map[string]*property{
-					"Struct": &property{
+				Properties: map[string]*Property{
+					"Struct": &Property{
 						Type: "array",
-						Items: &property{
+						Items: &Property{
 							Ref: "#/definitions/item",
 						},
 					},
-					"Struct2": &property{
+					"Struct2": &Property{
 						Type: "array",
-						Items: &property{
+						Items: &Property{
 							Ref: "#/definitions/item",
 						},
 					},
 				},
 			},
-			"item": property{
+			"item": Property{
 				Type: "object",
-				Properties: map[string]*property{
-					"Foo": &property{Type: "string"},
+				Properties: map[string]*Property{
+					"Foo": &Property{Type: "string"},
 				},
 				Required: []string{"Foo"},
 			},
@@ -359,27 +359,27 @@ func (self *propertySuite) TestLoadNestedSliceWithDefinitions(c *C) {
 func (self *propertySuite) TestLoadNestedSlice(c *C) {
 	j := NewGenerator().WithRoot(&ExampleJSONNestedSliceStruct{}).MustGenerate()
 
-	c.Assert(j, DeepEquals, JSONSchema{
+	c.Assert(j, DeepEquals, &JSONSchema{
 		Schema: DEFAULT_SCHEMA,
-		property: property{
+		Property: Property{
 			Type: "object",
-			Properties: map[string]*property{
-				"Struct": &property{
+			Properties: map[string]*Property{
+				"Struct": &Property{
 					Type: "array",
-					Items: &property{
+					Items: &Property{
 						Type: "object",
-						Properties: map[string]*property{
-							"Foo": &property{Type: "string"},
+						Properties: map[string]*Property{
+							"Foo": &Property{Type: "string"},
 						},
 						Required: []string{"Foo"},
 					},
 				},
-				"Struct2": &property{
+				"Struct2": &Property{
 					Type: "array",
-					Items: &property{
+					Items: &Property{
 						Type: "object",
-						Properties: map[string]*property{
-							"Foo": &property{Type: "string"},
+						Properties: map[string]*Property{
+							"Foo": &Property{Type: "string"},
 						},
 						Required: []string{"Foo"},
 					},
