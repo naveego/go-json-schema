@@ -1,4 +1,4 @@
-module github.com/SteveRuble/go-json-schema-generator
+module github.com/naveego/go-json-schema
 
 require (
 	github.com/kr/pretty v0.1.0 // indirect
