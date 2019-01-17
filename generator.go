@@ -239,6 +239,17 @@ func (p *Property) readFromStruct(t reflect.Type) {
 	for i := 0; i < count; i++ {
 		field := t.Field(i)
 
+		if field.PkgPath != "" {
+			// not an exported field
+			if p.Title == "" {
+				p.Title = field.Tag.Get("schema-title")
+			}
+			if p.Description == "" {
+				p.Description = field.Tag.Get("schema-description")
+			}
+			continue
+		}
+
 		tag := field.Tag.Get("json")
 		_, required := field.Tag.Lookup("required")
 		name, opts := parseTag(tag)
