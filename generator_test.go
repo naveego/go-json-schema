@@ -2,7 +2,6 @@ package jsonschema
 
 import (
 	"fmt"
-	"github.com/naveego/go-json-schema/testtypes"
 	"math"
 	"testing"
 	"time"
@@ -71,17 +70,27 @@ func (self *propertySuite) TestLoad(c *C) {
 	})
 }
 
+type ExampleJSONBasicWithTag struct {
+	meta         string  `json:"-" title:"Title" description:"Description text."`
+	Bool         bool    `json:"test" title:"BoolField"`
+	String       string  `json:"string" description:"blah" minLength:"3" maxLength:"10" pattern:"m{3,10}"`
+	Const        string  `json:"const" const:"blah"`
+	Float        float32 `json:"float" min:"1.5" max:"42"`
+	Int          int64   `json:"int" exclusiveMin:"-10" exclusiveMax:"0"`
+	AnswerToLife int     `json:"answer" const:"42"`
+	Fruit        string  `json:"fruit" enum:"apple|banana|pear"`
+}
 
 func (self *propertySuite) TestLoadWithTag(c *C) {
-	j, err := NewGenerator().WithRoot(&testtypes.ExampleJSONBasicWithTag{}).Generate()
+	j, err := NewGenerator().WithRoot(&ExampleJSONBasicWithTag{}).Generate()
 	c.Assert(err, IsNil)
 
 	c.Assert(j, DeepEquals, &JSONSchema{
 		Schema: DEFAULT_SCHEMA,
 		Property: Property{
-			Type: "object",
-			Title:"Title",
-			Description:"Description text.",
+			Type:        "object",
+			Title:       "Title",
+			Description: "Description text.",
 			Properties: map[string]*Property{
 				"test": &Property{
 					Type:  "boolean",
@@ -149,10 +158,29 @@ func (self *propertySuite) TestLoadSliceAndContains(c *C) {
 	})
 }
 
-type ExampleJSONNestedStruct struct {
-	Struct struct {
-		Foo string `required:"true"`
-	}
+type ExampleJSONExtensions struct {
+	Value string `json:"value" enum:"a|b|c" extensions:"{\"enumNames\": [\"A\",\"B\",\"C\"] }"`
+}
+
+func (self *propertySuite) TestExtension(c *C) {
+	j, err := NewGenerator().WithRoot(&ExampleJSONExtensions{}).Generate()
+	c.Assert(err, IsNil)
+
+	c.Assert(j, DeepEquals, &JSONSchema{
+		Schema: DEFAULT_SCHEMA,
+		Property: Property{
+			Type: "object",
+			Properties: map[string]*Property{
+				"value": &Property{
+					Type: "string",
+					Enum: []string{"a", "b", "c"},
+					Extensions: map[string]interface{}{
+						"enumNames": []interface{}{"A", "B", "C"},
+					},
+				},
+			},
+		},
+	})
 }
 
 type ExampleJSONNestedSlice struct {
@@ -256,7 +284,6 @@ func (self *propertySuite) TestLoadMap(c *C) {
 					Properties: map[string]*Property{
 						".*": &Property{Type: "string"},
 					},
-					AdditionalProperties: false,
 				},
 				"MapOfInterface": &Property{
 					Type:                 "object",

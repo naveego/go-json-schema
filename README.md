@@ -66,6 +66,10 @@ func main(){
 * `required:"true"` - field will be marked as required
 * `title:"Title"` - title will be added
 * `description:"description"` - description will be added
+* `extensions:"{\"enumNames\": [\"A\",\"B\",\"C\"] }"` - The JSON value of the tag will be merged into the resulting schema.
+
+> On an unexported field, these tags will be added to the schema for the struct itself
+> rather than to the property representing the field.
 
 ##### On string fields:
 
@@ -81,13 +85,6 @@ func main(){
 * `exclusiveMin:"0"` - Values must be strictly greater than this value
 * `exclusiveMax:"11"` - Values must be strictly smaller than this value
 * `const:"42"` - Property must have exactly this value.
-
-##### On unexported fields
-In order to set the title and description for a schema, you can
-add an unexported field to your struct and add these tags:
-
-* `schema-title:"Title"` - title will be added
-* `schema-description:"description"` - description will be added
 
 ### Expected behaviour
 

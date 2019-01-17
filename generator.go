@@ -87,7 +87,7 @@ func (g *Generator) MustGenerate() *JSONSchema {
 
 // Generate generates a schema for the provided interface.
 func (g *Generator) Generate() (*JSONSchema, error) {
-
+	var err error
 	d := &JSONSchema{
 		Schema: g.options.Schema,
 	}
@@ -109,13 +109,19 @@ func (g *Generator) Generate() (*JSONSchema, error) {
 	for defType, name := range d.knownTypes {
 		p := d.child()
 		p.isDefinition = true
-		p.read(defType)
+		err = p.read(defType)
+		if err != nil {
+			return nil, fmt.Errorf("error on type %s (%s): %s", defType, name, err)
+		}
 		d.Definitions[name] = *p
 	}
 
 	if g.root != nil {
 		value := reflect.ValueOf(g.root)
-		d.read(value.Type())
+		err = d.read(value.Type())
+		if err != nil {
+			return nil, fmt.Errorf("error on root type %T: %s", g.root, err)
+		}
 	}
 
 	return d, nil
@@ -145,6 +151,8 @@ type Property struct {
 	OneOf                []*Property          `json:"oneOf,omitempty"`
 	Dependencies         map[string]*Property `json:"dependencies,omitempty"`
 
+	Extensions map[string]interface{} `json:"-"`
+
 	// validation keywords:
 	// For any number-valued fields, we're making them pointers, because
 	// we want empty values to be omitted, but for numbers, 0 is seen as empty.
@@ -169,11 +177,42 @@ type Property struct {
 	isDefinition bool
 }
 
+type marshallingProperty Property
+
+func (p *Property) MarshalJSON() ([]byte, error) {
+	if p == nil {
+		return nil, nil
+	}
+	mp := marshallingProperty(*p)
+	b, err := json.Marshal(mp)
+	if err != nil {
+		return nil, err
+	}
+
+	if p.Extensions == nil {
+		return b, nil
+	}
+
+	// add extensions at the top level of the output
+	var raw map[string]interface{}
+	err = json.Unmarshal(b, &raw)
+	if err != nil {
+		return nil, err
+	}
+
+	for k, v := range p.Extensions {
+		raw[k] = v
+	}
+
+	b, err = json.Marshal(raw)
+	return b, err
+}
+
 func (p *Property) child() *Property {
 	return &Property{knownTypes: p.knownTypes}
 }
 
-func (p *Property) read(t reflect.Type) {
+func (p *Property) read(t reflect.Type) error {
 	jsType, format, kind := getTypeFromMapping(t)
 	if jsType != "" {
 		p.Type = jsType
@@ -182,15 +221,21 @@ func (p *Property) read(t reflect.Type) {
 		p.Format = format
 	}
 
+	var err error
+
 	switch kind {
 	case reflect.Slice:
-		p.readFromSlice(t)
+		err = p.readFromSlice(t)
 	case reflect.Map:
-		p.readFromMap(t)
+		err = p.readFromMap(t)
 	case reflect.Struct:
-		p.readFromStruct(t)
+		err = p.readFromStruct(t)
 	case reflect.Ptr:
-		p.read(t.Elem())
+		err = p.read(t.Elem())
+	}
+
+	if err != nil {
+		return err
 	}
 
 	// say we have *int
@@ -201,19 +246,22 @@ func (p *Property) read(t reflect.Type) {
 		}
 		p.Type = ""
 	}
+
+	return nil
 }
 
-func (p *Property) readFromSlice(t reflect.Type) {
+func (p *Property) readFromSlice(t reflect.Type) error {
 	jsType, _, kind := getTypeFromMapping(t.Elem())
 	if kind == reflect.Uint8 {
 		p.Type = "string"
 	} else if jsType != "" || kind == reflect.Ptr {
 		p.Items = p.child()
-		p.Items.read(t.Elem())
+		return p.Items.read(t.Elem())
 	}
+	return nil
 }
 
-func (p *Property) readFromMap(t reflect.Type) {
+func (p *Property) readFromMap(t reflect.Type) error {
 	jsType, format, _ := getTypeFromMapping(t.Elem())
 
 	if jsType != "" {
@@ -222,14 +270,15 @@ func (p *Property) readFromMap(t reflect.Type) {
 	} else {
 		p.AdditionalProperties = true
 	}
+	return nil
 }
 
-func (p *Property) readFromStruct(t reflect.Type) {
+func (p *Property) readFromStruct(t reflect.Type) error {
 	var ok bool
 	if !p.isDefinition {
 		if p.Ref, ok = p.knownTypes.getReference(t); ok {
 			p.Type = ""
-			return
+			return nil
 		}
 	}
 
@@ -241,38 +290,53 @@ func (p *Property) readFromStruct(t reflect.Type) {
 	for i := 0; i < count; i++ {
 		field := t.Field(i)
 
-		if field.PkgPath != "" {
-			// not an exported field
-			if p.Title == "" {
-				p.Title = field.Tag.Get("schema-title")
-			}
-			if p.Description == "" {
-				p.Description = field.Tag.Get("schema-description")
-			}
-			continue
-		}
-
 		tag := field.Tag.Get("json")
-		_, required := field.Tag.Lookup("required")
+
 		name, opts := parseTag(tag)
-		if name == "" {
-			name = field.Name
-		}
-		if name == "-" {
-			continue
+
+		var target *Property
+		if field.PkgPath == "" {
+			// this is an exported property
+			target = p.child()
+
+			err := target.read(field.Type)
+			if err != nil {
+				return fmt.Errorf("property:%s:%s", field.Name, err)
+			}
+			if name == "" {
+				name = field.Name
+			}
+			if name == "-" {
+				continue
+			}
+			p.Properties[name] = target
+		} else {
+			// not an exported field, tags apply to this property
+			target = p
 		}
 
-		p.Properties[name] = p.child()
-		p.Properties[name].read(field.Type)
-		p.Properties[name].Description = field.Tag.Get("description")
-		p.Properties[name].Title = field.Tag.Get("title")
-		p.Properties[name].addValidatorsFromTags(&field.Tag)
+		target.Description = field.Tag.Get("description")
+		target.Title = field.Tag.Get("title")
+		target.addValidatorsFromTags(&field.Tag)
 
+		extensionsRaw, hasExtensions := field.Tag.Lookup("extensions")
+		if hasExtensions {
+			var extensionsMap map[string]interface{}
+			err := json.Unmarshal([]byte(extensionsRaw), &extensionsMap)
+			if err != nil {
+				return fmt.Errorf(`invalid "extensions" tag value %q: %s`, extensionsRaw, err)
+			}
+			target.Extensions = extensionsMap
+		}
+
+		_, required := field.Tag.Lookup("required")
 		if opts.Contains("omitempty") || !required {
 			continue
 		}
 		p.Required = append(p.Required, name)
 	}
+
+	return nil
 }
 
 func (p *Property) addValidatorsFromTags(tag *reflect.StructTag) {
