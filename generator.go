@@ -1,6 +1,6 @@
 // Copyright Kozyrev Yury
 // MIT license.
-package generator
+package jsonschema
 
 import (
 	"encoding/json"
