@@ -1,7 +1,3 @@
-# go-json-schema-generator
-[![codecov](https://codecov.io/gh/SteveRuble/go-json-schema-generator/branch/master/graph/badge.svg)](https://codecov.io/gh/SteveRuble/go-json-schema-generator)
-
-
 Generate JSON Schema out of Golang schema
 
 ### Usage
