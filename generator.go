@@ -142,6 +142,8 @@ type Property struct {
 	AdditionalProperties bool                 `json:"additionalProperties,omitempty"`
 	Description          string               `json:"description,omitempty"`
 	AnyOf                []*Property          `json:"anyOf,omitempty"`
+	OneOf                []*Property          `json:"oneOf,omitempty"`
+	Dependencies         map[string]*Property `json:"dependencies,omitempty"`
 
 	// validation keywords:
 	// For any number-valued fields, we're making them pointers, because
