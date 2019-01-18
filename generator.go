@@ -150,7 +150,7 @@ type Property struct {
 	AnyOf                []*Property          `json:"anyOf,omitempty"`
 	OneOf                []*Property          `json:"oneOf,omitempty"`
 	Dependencies         map[string]*Property `json:"dependencies,omitempty"`
-
+	Default interface{} `json:"default,omitempty"`
 	Extensions map[string]interface{} `json:"-"`
 
 	// validation keywords:
@@ -274,6 +274,7 @@ func (p *Property) readFromMap(t reflect.Type) error {
 }
 
 func (p *Property) readFromStruct(t reflect.Type) error {
+	var err error
 	var ok bool
 	if !p.isDefinition {
 		if p.Ref, ok = p.knownTypes.getReference(t); ok {
@@ -318,6 +319,25 @@ func (p *Property) readFromStruct(t reflect.Type) error {
 		target.Description = field.Tag.Get("description")
 		target.Title = field.Tag.Get("title")
 		target.addValidatorsFromTags(&field.Tag)
+
+		dflt, ok := field.Tag.Lookup("default")
+		if ok {
+			switch target.Type {
+			case "string": target.Default = dflt
+			case "number", "integer":
+				target.Default, err = strconv.ParseFloat(dflt, 64)
+				if err != nil {
+					return fmt.Errorf("could not parse %q to float64 for property %s", dflt, name)
+				}
+			case "boolean":
+				target.Default, err = strconv.ParseBool(dflt)
+				if err != nil {
+					return fmt.Errorf("could not parse %q to bool for property %s", dflt, name)
+				}
+			default:
+				return fmt.Errorf("default not supported for type %q on property %s", target.Type, name)
+			}
+		}
 
 		extensionsRaw, hasExtensions := field.Tag.Lookup("extensions")
 		if hasExtensions {

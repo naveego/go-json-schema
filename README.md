@@ -7,7 +7,7 @@ First install the package
 go get -u github.com/naveego/go-json-schema
 ```
 
-Then create your generator file (see [Example](https://github.com/SteveRuble/go-json-schema-generator/blob/master/example) folder)
+Then create your generator file (see [Example](https://github.com/naveego/go-json-schema/blob/master/example) folder)
 ```go
 package main
 
@@ -73,14 +73,17 @@ func main(){
 * `maxLength:"5"` - Set the maximum length of the value
 * `enum:"apple|banana|pear"` - Limit the available values to a defined set, separated by vertical bars
 * `const:"I need to be there"` - Require the field to have a specific value.
+* `default:"some string value"` - The default string value.
 
-##### On numeric types (strings and floats)
+##### On numeric types (ints and floats)
 
 * `min:"-4.141592"` -  Set a minimum value
 * `max:"123456789"` -  Set a maximum value
 * `exclusiveMin:"0"` - Values must be strictly greater than this value
 * `exclusiveMax:"11"` - Values must be strictly smaller than this value
 * `const:"42"` - Property must have exactly this value.
+* `default:"42"` - The default numeric value.
+
 
 ### Expected behaviour
 

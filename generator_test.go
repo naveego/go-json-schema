@@ -19,8 +19,8 @@ var _ = Suite(&propertySuite{})
 
 type ExampleJSONBasic struct {
 	Omitted    string  `json:"-,omitempty"`
-	Bool       bool    `json:",omitempty"`
-	Integer    int     `json:",omitempty"`
+	Bool       bool    `json:",omitempty" default:"true"`
+	Integer    int     `json:",omitempty" default:"42"`
 	Integer8   int8    `json:",omitempty"`
 	Integer16  int16   `json:",omitempty"`
 	Integer32  int32   `json:",omitempty"`
@@ -30,7 +30,7 @@ type ExampleJSONBasic struct {
 	UInteger16 uint16  `json:",omitempty"`
 	UInteger32 uint32  `json:",omitempty"`
 	UInteger64 uint64  `json:",omitempty"`
-	String     string  `json:",omitempty"`
+	String     string  `json:",omitempty" default:"ok"`
 	Bytes      []byte  `json:",omitempty"`
 	Float32    float32 `json:",omitempty"`
 	Float64    float64
@@ -48,8 +48,8 @@ func (self *propertySuite) TestLoad(c *C) {
 			Type:     "object",
 			Required: []string{"Interface"},
 			Properties: map[string]*Property{
-				"Bool":       &Property{Type: "boolean"},
-				"Integer":    &Property{Type: "integer"},
+				"Bool":       &Property{Type: "boolean", Default:true},
+				"Integer":    &Property{Type: "integer", Default: float64(42)},
 				"Integer8":   &Property{Type: "integer"},
 				"Integer16":  &Property{Type: "integer"},
 				"Integer32":  &Property{Type: "integer"},
@@ -59,7 +59,7 @@ func (self *propertySuite) TestLoad(c *C) {
 				"UInteger16": &Property{Type: "integer"},
 				"UInteger32": &Property{Type: "integer"},
 				"UInteger64": &Property{Type: "integer"},
-				"String":     &Property{Type: "string"},
+				"String":     &Property{Type: "string", Default: "ok"},
 				"Bytes":      &Property{Type: "string"},
 				"Float32":    &Property{Type: "number"},
 				"Float64":    &Property{Type: "number"},
