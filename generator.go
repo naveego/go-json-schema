@@ -145,7 +145,7 @@ type Property struct {
 	Items                *Property            `json:"items,omitempty"`
 	Properties           map[string]*Property `json:"properties,omitempty"`
 	Required             []string             `json:"required,omitempty"`
-	AdditionalProperties bool                 `json:"additionalProperties,omitempty"`
+	AdditionalProperties interface{}          `json:"additionalProperties,omitempty"`
 	Description          string               `json:"description,omitempty"`
 	AnyOf                []*Property          `json:"anyOf,omitempty"`
 	OneOf                []*Property          `json:"oneOf,omitempty"`
@@ -285,7 +285,6 @@ func (p *Property) readFromStruct(t reflect.Type) error {
 
 	p.Type = "object"
 	p.Properties = make(map[string]*Property, 0)
-	p.AdditionalProperties = false
 
 	count := t.NumField()
 	for i := 0; i < count; i++ {
